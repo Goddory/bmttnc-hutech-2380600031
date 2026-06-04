@@ -1,2 +1,1 @@
-"""UI package for lab-03 demos."""
-
+# Package marker for PyQt UI modules.

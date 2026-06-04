@@ -1,10 +1,12 @@
 from flask import Flask, jsonify, request
 
+from cipher.ecc import ECCCipher
 from cipher.rsa import RSACipher
 
 
 app = Flask(__name__)
 rsa_cipher = RSACipher()
+ecc_cipher = ECCCipher()
 
 
 @app.route("/api/rsa/generate_keys", methods=["GET"])
@@ -72,6 +74,41 @@ def verify_message():
     try:
         _, public_key = rsa_cipher.load_keys()
         is_verified = rsa_cipher.verify(message, bytes.fromhex(signature_hex), public_key)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"is_verified": is_verified})
+
+
+@app.route("/api/ecc/generate_keys", methods=["GET"])
+def ecc_generate_keys():
+    ecc_cipher.generate_keys()
+    return jsonify({"message": "Keys generated successfully"})
+
+
+@app.route("/api/ecc/sign", methods=["POST"])
+def ecc_sign_message():
+    data = request.get_json(silent=True) or {}
+    message = data.get("message", "")
+    if not message:
+        return jsonify({"error": "Missing message"}), 400
+
+    signing_key, _ = ecc_cipher.load_keys()
+    signature = ecc_cipher.sign(message, signing_key)
+    return jsonify({"signature": signature.hex()})
+
+
+@app.route("/api/ecc/verify", methods=["POST"])
+def ecc_verify_message():
+    data = request.get_json(silent=True) or {}
+    message = data.get("message", "")
+    signature_hex = data.get("signature", "")
+
+    if not message or not signature_hex:
+        return jsonify({"error": "Missing message or signature"}), 400
+
+    try:
+        _, verifying_key = ecc_cipher.load_keys()
+        is_verified = ecc_cipher.verify(message, bytes.fromhex(signature_hex), verifying_key)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify({"is_verified": is_verified})
