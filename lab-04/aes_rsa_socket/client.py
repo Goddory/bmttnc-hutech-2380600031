@@ -85,7 +85,7 @@ def main() -> None:
             if message.strip().lower() == "exit":
                 break
     except KeyboardInterrupt:
-        print("\nClient stopped by user.")
+        print("\nClient stopped by user")
     finally:
         client_socket.close()
 
